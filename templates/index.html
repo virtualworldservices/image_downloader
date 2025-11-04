@@ -1,26 +1,35 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Image Gallery</title>
+    <title>Image Downloader</title>
 </head>
 <body>
-    <h1>Image Gallery</h1>
-    <div style="display:flex; flex-wrap: wrap;">
-        {% for img in images %}
-        <div style="margin:10px; text-align:center;">
-            <img src="{{ img.url }}" width="200"><br>
-            <a href="{{ img.url }}" target="_blank" download>Download</a>
-        </div>
-        {% endfor %}
-    </div>
+    <h1>Image Downloader</h1>
 
-    <div style="margin-top:20px;">
-        {% if page > 1 %}
-            <a href="/?page={{ page - 1 }}">Previous 10</a>
-        {% endif %}
-        {% if page*10 < total %}
-            <a href="/?page={{ page + 1 }}">Next 10</a>
-        {% endif %}
-    </div>
+    <form method="POST">
+        <input type="text" name="url" placeholder="Enter website URL" required style="width:300px;">
+        <button type="submit">Run</button>
+    </form>
+
+    {% if images %}
+        <h2>Downloaded Images</h2>
+        <div style="display:flex; flex-wrap: wrap;">
+            {% for img in images %}
+            <div style="margin:10px; text-align:center;">
+                <img src="{{ img.filename }}" width="200"><br>
+                <a href="/download/{{ img.filename }}" target="_blank">Download</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top:20px;">
+            {% if page > 1 %}
+                <a href="{{ url_for('index', page=page-1) }}">Previous 10</a>
+            {% endif %}
+            {% if page*10 < total %}
+                <a href="{{ url_for('index', page=page+1) }}">Next 10</a>
+            {% endif %}
+        </div>
+    {% endif %}
 </body>
 </html>
