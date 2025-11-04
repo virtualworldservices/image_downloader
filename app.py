@@ -17,16 +17,15 @@ def clean_filename(name):
 
 def get_chrome_options():
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.binary_location = os.environ.get(
-        "GOOGLE_CHROME_BIN",
-        "/app/.chrome-for-testing/chrome-linux64/chrome"
-    )
-    chrome_options.add_argument("--headless=new")
+    chrome_options.binary_location = "/app/.chrome-for-testing/chrome-linux64/chrome"
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-extensions")
     return chrome_options
+    service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
 
 def crawl_images(base_url, max_images=30):
     if not base_url.startswith("http"):
@@ -137,4 +136,5 @@ def download_file(filepath):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
