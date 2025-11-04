@@ -17,7 +17,7 @@
             {% for img in images %}
             <div style="margin:10px; text-align:center;">
                 <img src="{{ img.filename }}" width="200"><br>
-                <a href="/download/{{ img.filename }}" target="_blank">Download</a>
+                <a href="{{ url_for('download_file', filename=img_filename) }}">Download</a>
             </div>
             {% endfor %}
         </div>
@@ -33,3 +33,4 @@
     {% endif %}
 </body>
 </html>
+
