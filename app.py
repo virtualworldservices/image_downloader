@@ -31,16 +31,11 @@ def crawl_images(base_url, max_images=30):
         base_url = "https://" + base_url
 
     chrome_options = get_chrome_options()
-    
-    # Use Service instead of executable_path
     service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
-
     driver = webdriver.Chrome(service=service, options=chrome_options)
     actions = ActionChains(driver)
 
-    temp_dir = tempfile.mkdtemp()
     images_data = []
-
     visited_pages = set()
     to_visit = {base_url}
 
@@ -74,7 +69,7 @@ def crawl_images(base_url, max_images=30):
             (clean_filename(path_parts[-1].capitalize()) if path_parts else "home")
         )
 
-        # find .jpg/.webp
+        # find .jpg/.webp links
         image_links = driver.find_elements(
             By.XPATH,
             "//a[substring(@href, string-length(@href)-3)='.jpg' or substring(@href, string-length(@href)-4)='.webp']"
@@ -83,24 +78,15 @@ def crawl_images(base_url, max_images=30):
         for idx, link in enumerate(image_links, start=1):
             if len(images_data) >= max_images:
                 break
-            try:
-                href = link.get_attribute("href")
-                if not href:
-                    continue
-
-                response = requests.get(href)
-                if response.status_code == 200:
-                    ext = href.split('.')[-1].split('?')[0]
-                    file_name = os.path.join(temp_dir, f"{page_name}_{idx}.{ext}")
-                    with open(file_name, "wb") as f:
-                        f.write(response.content)
-
-                    images_data.append({
-                        "filename": file_name,
-                        "display_name": f"{page_name}_{idx}.{ext}"
-                    })
-            except:
+            href = link.get_attribute("href")
+            if not href:
                 continue
+
+            ext = href.split('.')[-1].split('?')[0]
+            images_data.append({
+                "url": href,
+                "display_name": f"{page_name}_{idx}.{ext}"
+            })
 
     driver.quit()
     return images_data
@@ -132,6 +118,7 @@ def download_file(filepath):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
 
