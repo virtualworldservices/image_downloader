@@ -128,10 +128,11 @@ def index():
 
 @app.route("/download/<path:filepath>")
 def download_file(filepath):
-    return send_file(filepath, as_attachment=True)
+    return send_from_directory("static/downloads", filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
 
