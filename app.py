@@ -1,13 +1,12 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, send_file, redirect, url_for
 import os
-import time
 import requests
 import re
-import threading
 from urllib.parse import urlparse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
+import tempfile
 
 app = Flask(__name__)
 
@@ -26,10 +25,9 @@ def get_chrome_options():
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--window-size=1920,1080")
-    chrome_options.add_argument("--disable-extensions")
     return chrome_options
 
-def crawl_images(base_url):
+def crawl_images(base_url, max_images=30):
     if not base_url.startswith("http"):
         base_url = "https://" + base_url
 
@@ -42,33 +40,24 @@ def crawl_images(base_url):
     )
     actions = ActionChains(driver)
 
-    domain_name = urlparse(base_url).netloc.replace("www.", "")
-    folder_path = os.path.join(os.getcwd(), "downloads", domain_name)
-    os.makedirs(folder_path, exist_ok=True)
+    temp_dir = tempfile.mkdtemp()
+    images_data = []
 
     visited_pages = set()
     to_visit = {base_url}
-    downloaded_images = set()
 
-    while to_visit:
+    while to_visit and len(images_data) < max_images:
         url = to_visit.pop()
         if url in visited_pages:
             continue
-        if any(skip in url.lower() for skip in [
-            "contact", "about", "quality", "admin", "pdf", "service", "press",
-            "news", "facebook", "instagram", "twitter", "youtube", "pinterest"
-        ]):
-            continue
-
         visited_pages.add(url)
-        print(f"Visiting page: {url}")
+
         try:
             driver.get(url)
         except:
             continue
-        time.sleep(2)
 
-        # --- Collect links ---
+        # collect internal links
         try:
             links_on_page = driver.find_elements(By.XPATH, "//a[@href]")
             for link in links_on_page:
@@ -79,7 +68,7 @@ def crawl_images(base_url):
         except:
             pass
 
-        # --- Page name ---
+        # page name
         path_parts = [p for p in urlparse(url).path.split("/") if p]
         page_name = (
             "_".join([clean_filename(p.capitalize()) for p in path_parts[-2:]])
@@ -87,54 +76,61 @@ def crawl_images(base_url):
             (clean_filename(path_parts[-1].capitalize()) if path_parts else "home")
         )
 
-        # --- Find .jpg/.webp links ---
+        # find .jpg/.webp
         image_links = driver.find_elements(
             By.XPATH,
             "//a[substring(@href, string-length(@href)-3)='.jpg' or substring(@href, string-length(@href)-4)='.webp']"
         )
 
         for idx, link in enumerate(image_links, start=1):
+            if len(images_data) >= max_images:
+                break
             try:
                 href = link.get_attribute("href")
-                if not href or href in downloaded_images:
+                if not href:
                     continue
-                driver.execute_script("arguments[0].scrollIntoView(true);", link)
-                actions.move_to_element(link).perform()
-                print(f"Downloading: {href}")
+
                 response = requests.get(href)
                 if response.status_code == 200:
                     ext = href.split('.')[-1].split('?')[0]
-                    file_name = os.path.join(folder_path, f"{page_name}_{idx}.{ext}")
+                    file_name = os.path.join(temp_dir, f"{page_name}_{idx}.{ext}")
                     with open(file_name, "wb") as f:
                         f.write(response.content)
-                    downloaded_images.add(href)
-            except Exception as e:
-                print(f"Skipping image due to error: {e}")
+
+                    images_data.append({
+                        "filename": file_name,
+                        "display_name": f"{page_name}_{idx}.{ext}"
+                    })
+            except:
                 continue
 
     driver.quit()
-    print(f"All images saved to: {folder_path}")
-    return folder_path
+    return images_data
 
-@app.route("/")
+# --- Routes ---
+@app.route("/", methods=["GET", "POST"])
 def index():
-    return render_template("index.html", page=1, total=0, images=[])
+    page = int(request.args.get("page", 1))
+    images = []
+    url = ""
 
-@app.route("/crawl", methods=["POST"])
-def start_crawl():
-    base_url = request.form.get("url")
-    if not base_url:
-        return jsonify({"error": "URL is required"}), 400
+    if request.method == "POST":
+        url = request.form.get("url")
+        if url:
+            # Save images to session temp folder
+            images = crawl_images(url)
+            request.environ['images_data'] = images  # Store in request temporarily
+            return render_template("index.html", images=images[0:10], page=1, total=len(images), url=url)
 
-    thread = threading.Thread(target=crawl_images, args=(base_url,))
-    thread.start()
+    # GET request: handle next/prev page
+    images = request.environ.get('images_data', [])
+    start = (page-1)*10
+    end = start + 10
+    return render_template("index.html", images=images[start:end], page=page, total=len(images), url=url)
 
-    return jsonify({"message": f"Crawling started for {base_url}."})
+@app.route("/download/<path:filepath>")
+def download_file(filepath):
+    return send_file(filepath, as_attachment=True)
 
 if __name__ == "__main__":
-    os.makedirs("downloads", exist_ok=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-
-
-
-
