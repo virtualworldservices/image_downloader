@@ -16,10 +16,9 @@ def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "_", name)
 
 def get_chrome_options():
-    """Configure Chrome for Heroku (headless)."""
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN", "/usr/bin/google-chrome")
-    chrome_options.add_argument("--headless")
+    chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN", "/opt/google/chrome/chrome")
+    chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-gpu")
@@ -130,3 +129,4 @@ def start_crawl():
 if __name__ == "__main__":
     os.makedirs("downloads", exist_ok=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
