@@ -17,7 +17,10 @@ def clean_filename(name):
 
 def get_chrome_options():
     chrome_options = webdriver.ChromeOptions()
-    chrome_options.binary_location = os.environ.get("GOOGLE_CHROME_BIN", "/app/.chrome-for-testing/chrome-linux64/chrome")
+    chrome_options.binary_location = os.environ.get(
+        "GOOGLE_CHROME_BIN",
+        "/app/.chrome-for-testing/chrome-linux64/chrome"
+    )
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -30,10 +33,12 @@ def crawl_images(base_url):
     if not base_url.startswith("http"):
         base_url = "https://" + base_url
 
-    options = get_chrome_options()
     driver = webdriver.Chrome(
-        executable_path=os.environ.get("CHROMEDRIVER_PATH", "/app/.chrome-for-testing/chromedriver-linux64/chromedriver"),
-        options=options
+        executable_path=os.environ.get(
+            "CHROMEDRIVER_PATH",
+            "/app/.chrome-for-testing/chromedriver-linux64/chromedriver"
+        ),
+        options=get_chrome_options()
     )
     actions = ActionChains(driver)
 
@@ -129,5 +134,6 @@ def start_crawl():
 if __name__ == "__main__":
     os.makedirs("downloads", exist_ok=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
