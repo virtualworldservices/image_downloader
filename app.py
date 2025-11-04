@@ -25,7 +25,6 @@ def get_chrome_options():
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-extensions")
     return chrome_options
-    service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
 
 def crawl_images(base_url, max_images=30):
     if not base_url.startswith("http"):
@@ -34,10 +33,7 @@ def crawl_images(base_url, max_images=30):
     chrome_options = get_chrome_options()
     
     # Use Service instead of executable_path
-    service = Service(os.environ.get(
-        "CHROMEDRIVER_PATH",
-        "/app/.chrome-for-testing/chromedriver-linux64/chromedriver"
-    ))
+    service = Service("/app/.chrome-for-testing/chromedriver-linux64/chromedriver")
 
     driver = webdriver.Chrome(service=service, options=chrome_options)
     actions = ActionChains(driver)
@@ -136,5 +132,6 @@ def download_file(filepath):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
