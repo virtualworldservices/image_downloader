@@ -118,7 +118,7 @@ def crawl_images(base_url):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", page=1, total=0, images=[])
 
 @app.route("/crawl", methods=["POST"])
 def start_crawl():
@@ -134,6 +134,7 @@ def start_crawl():
 if __name__ == "__main__":
     os.makedirs("downloads", exist_ok=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
 
 
